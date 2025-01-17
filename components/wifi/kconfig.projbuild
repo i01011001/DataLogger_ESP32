@@ -1,0 +1,9 @@
+menu "Wifi connect"
+	config WIFI_SSID
+		string "Wifi SSID"
+		default "podamibe"
+	
+	config WIFI_PASSWD
+		string "Wifi Password"
+		default "Chobhar570)))"
+endmenu 

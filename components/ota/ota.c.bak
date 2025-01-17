@@ -1,0 +1,167 @@
+#include "esp_crt_bundle.h"
+#include <driver/gpio.h>
+#include <esp_event.h>
+#include <esp_http_client.h>
+#include <esp_https_ota.h>
+#include <esp_log.h>
+#include <esp_netif.h>
+#include <esp_ota_ops.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <stdio.h>
+
+#define intr_button 0
+
+SemaphoreHandle_t sema_handler;
+
+#define TAG "OTA"
+
+#define BUFFER_SIZE 1024
+
+static char ota_write_data[BUFFER_SIZE + 1] = {0};
+
+// for https certification
+extern const uint8_t cert_pem[] asm("_binary_google_pem_start");
+
+void intr_button_pushed() { xSemaphoreGive(sema_handler); }
+
+void intr_setup() {
+	gpio_config_t intr_button_config = {
+		.intr_type = GPIO_INTR_POSEDGE,
+		.mode = GPIO_MODE_INPUT,
+		.pull_up_en = GPIO_PULLUP_ENABLE,
+		.pull_down_en = GPIO_PULLDOWN_DISABLE,
+		.pin_bit_mask = (1ULL << intr_button),
+	};
+	gpio_config(&intr_button_config);
+	gpio_install_isr_service(0);
+	gpio_isr_handler_add(intr_button, intr_button_pushed, NULL);
+}
+
+void ota_setup() {
+	esp_ota_handle_t ota_handle;
+	esp_app_desc_t incoming_ota; 
+	esp_err_t  err;
+	fprintf(stderr, "updating ...\n");
+	esp_http_client_config_t client_config = {
+		.url = "https://drive.usercontent.google.com/download?id=14hlL6p5KSGJnfpqwTXCJTugrlqKS0UPr&export=download&authuser=0&confirm=t&uuid=a4b33121-f52e-43b6-bf20-6fcfb10ad95f&at=APvzH3o6qbkUqBf72eNBU4l63RRr:1736242908248",
+		.cert_pem = (char *)cert_pem,
+		// .crt_bundle_attach = esp_crt_bundle_attach,
+		.timeout_ms = 5000,
+		.keep_alive_enable = true,
+	};
+	esp_http_client_handle_t client_handler = esp_http_client_init(&client_config);
+
+	esp_http_client_open(client_handler, 0);
+
+	esp_http_client_fetch_headers(client_handler);
+
+	const esp_partition_t *running_partition = esp_ota_get_running_partition();
+	const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+	bool image_header_was_checked = false;
+
+	int binary_file_length = 0;
+
+	while (1) {
+		// xSemaphoreTake(sema_handler, portMAX_DELAY);
+
+		int data_size = esp_http_client_read(client_handler, ota_write_data, BUFFER_SIZE);
+
+		if (data_size < 0) {
+			ESP_LOGE(TAG, "data is invalid");
+		} else if (data_size > 0) {
+			if(image_header_was_checked != true){
+
+				if (data_size > sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t) + sizeof(esp_app_desc_t)) {
+					// getting info on incoming firmare
+					memcpy(&incoming_ota, &ota_write_data[sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t)], sizeof(esp_app_desc_t));
+
+					esp_app_desc_t running_partition_description;
+
+					// declaration for previous invalid partition
+					// const esp_partition_t *last_invalid_partition = esp_ota_get_last_invalid_partition();
+					// esp_app_desc_t invalid_app_info;
+
+
+					// getting info on running firmware
+					esp_ota_get_partition_description(running_partition, &running_partition_description);
+					ESP_LOGI(TAG, "current version: %s", running_partition_description.version);
+					ESP_LOGI(TAG, "incoming version: %s", incoming_ota.version);
+
+					if (strcmp(incoming_ota.version, running_partition_description.version) == 0) {
+						ESP_LOGE(TAG, "incoming OTA version is equal to the current one");
+						continue;
+					}
+
+					// getting info on last invalid partition
+					// if (esp_ota_get_partition_description(last_invalid_partition, &invalid_app_info) == ESP_OK) {
+					// 	ESP_LOGI(TAG, "Last invalid firmware version: %s", invalid_app_info.version);
+					// }
+					//
+					// if (last_invalid_partition != NULL) {
+					// 	if (memcmp(invalid_app_info.version, incoming_ota.version, sizeof(incoming_ota.version)) == 0) {
+					// 		ESP_LOGW(TAG, "New version is the same as invalid version.");
+					// 		ESP_LOGW(TAG, "Previously, there was an attempt to launch the firmware with %s version, but it failed.", invalid_app_info.version);
+					// 		ESP_LOGW(TAG, "The firmware has been rolled back to the previous version.");
+					// 		esp_http_client_close(client_handler);
+					// 		esp_http_client_cleanup(client_handler);
+					// 	}
+					// }
+					
+					image_header_was_checked = true;
+
+					err = esp_ota_begin(update_partition, OTA_WITH_SEQUENTIAL_WRITES, &ota_handle);
+					if ( err!=0) {
+						// ESP_LOGE("ERROR", "OTA couldn't be started");
+						ESP_LOGE(TAG, "begin err: %s", esp_err_to_name(err));
+						esp_http_client_close(client_handler);
+						esp_http_client_cleanup(client_handler);
+						continue;
+					}
+				}
+				ESP_LOGI(TAG, "data_size: %x",data_size);
+				err = esp_ota_write(ota_handle, (const void*)ota_write_data, data_size);
+				if( err!=0 ){
+					ESP_LOGE(TAG, "write error: %s", esp_err_to_name(err));
+					esp_http_client_close(client_handler);
+					esp_http_client_cleanup(client_handler);
+				}
+				binary_file_length += data_size;
+			}
+		} else if (data_size == 0) {
+			/*
+			 * As esp_http_client_read never returns negative error code, we rely on
+			 * `errno` to check for underlying transport connectivity closure if any
+			 */
+			if (errno == ECONNRESET || errno == ENOTCONN) {
+				ESP_LOGE(TAG, "Connection closed, errno = %d", errno);
+				break;
+			}
+			if (esp_http_client_is_complete_data_received(client_handler) == true) {
+				ESP_LOGI(TAG, "Connection closed");
+				break;
+			}
+		}
+	}
+	err =esp_ota_end(ota_handle); 
+	if( err!=0 ){
+		ESP_LOGE(TAG, "end error: %s", esp_err_to_name(err));
+		esp_http_client_close(client_handler);
+		esp_http_client_cleanup(client_handler);
+	}
+}
+
+void ota_start(void) {
+	printf("\n");
+	sema_handler = xSemaphoreCreateBinary();
+	// configuration for isr push button
+
+	intr_setup();
+
+	// const esp_partition_t *running_partition = esp_ota_get_running_partition();
+	// esp_app_desc_t running_partition_description;
+	// esp_ota_get_partition_description(running_partition, &running_partition_description);
+	// printf("current firmware version is: %s\n", running_partition_description.version);
+
+	xTaskCreate(ota_setup, "function to be executed", 1024 * 8, NULL, 2, NULL);
+}

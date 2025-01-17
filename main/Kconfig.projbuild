@@ -1,0 +1,5 @@
+menu "Data Logger Configuration"
+
+		
+	orsource ../components/wifi/kconfig.projbuild
+endmenu
