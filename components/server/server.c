@@ -1,12 +1,15 @@
-#include <esp_http_server.h>
-#include <esp_log.h>
-#include <freertos/task.h>
-#include <mdns.h>
-#include <sensors.h>
-#include <server.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "esp_http_server.h"
+#include "esp_log.h"
+#include "freertos/task.h"
+#include "mdns.h"
+#include "sensors.h"
+#include "server.h"
+#include "cJSON.h"
+
 
 static const char *TAG = "HTTPD SERVER";
 
@@ -62,18 +65,28 @@ static void send_data(void *arg) {
     struct async_resp_arg *resp_arg = arg;
     httpd_handle_t hd = resp_arg->hd;
     int fd = resp_arg->fd;
-    char response[200];
-    snprintf(response, 200,
-             "\{\"time\":\"%02x | %02x | %02x\",\"date\":\"%02x | %02x | "
-             "%02x\",\"day\":\"%02x\",\"humidity\":\"%02.2f\",\"temperature\":\"%"
-             "02.2f\", \"accel\":\"%s\", \"gyro\":\"%s\", \"lux\":\"%03.2f\"}",
-             time_data[2], time_data[1], time_data[0], time_data[6], time_data[5], time_data[4], time_data[3], get_humidity(), get_temperature(), get_accel(),
-             get_gyro(), get_lux());
-    httpd_ws_frame_t ws_pkt;
-    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    // char response[200];
+	cJSON *json = cJSON_CreateObject();
+	cJSON_AddNumberToObject(json, "humidity", get_humidity());
+	cJSON_AddNumberToObject(json, "temperature", get_temperature());
+	// memcpy(response, cJSON_Print(json), sizeof(response));
+	char *response = cJSON_Print(json);
+    // snprintf(response, 200,
+    //          "\{\"time\":\"%02x | %02x | %02x\",\"date\":\"%02x | %02x | "
+    //          "%02x\",\"day\":\"%02x\",\"humidity\":\"%02.2f\",\"temperature\":\"%"
+    //          "02.2f\", \"accel\":\"%s\", \"gyro\":\"%s\", \"lux\":\"%03.2f\"}",
+    //          time_data[2], time_data[1], time_data[0], time_data[6], time_data[5], time_data[4], time_data[3], get_humidity(), get_temperature(), get_accel(),
+    //          get_gyro(), get_lux());
+
+	// cJSON_free(json);
+	cJSON_Delete(json);
+
+    httpd_ws_frame_t ws_pkt={};
+    // memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
     ws_pkt.payload = (uint8_t *)response;
     ws_pkt.len = strlen(response);
     ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+
     httpd_ws_send_frame_async(hd, fd, &ws_pkt);
     free(resp_arg);
 }

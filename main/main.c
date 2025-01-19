@@ -17,13 +17,13 @@ void app_main(void) {
     //
     // tsl2561_init();
     // mpu6050_init();
-    // dht_init();
+    dht_init();
     //
     // ntp_init();
     // tinyRTC_init();
 
 
-    mqtt_init();
+    // mqtt_init();
     // mdns_service(); 
 	// ota_start();
     server_init();

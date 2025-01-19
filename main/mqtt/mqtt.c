@@ -68,21 +68,21 @@ static void mqtt_publish(void *args) {
   char data[16]={};
   esp_mqtt_client_handle_t client = ((esp_mqtt_client_handle_t)args);
   while (true) {
-    // snprintf(data, sizeof(data), "%.2f\t%.2f\n", get_humidity(), get_temperature());
-    // esp_mqtt_client_publish(client, "esp", data, sizeof(data), 1, 0);
+    snprintf(data, sizeof(data), "%.2f\t%.2f\n", get_humidity(), get_temperature());
+    esp_mqtt_client_publish(client, "esp", data, sizeof(data), 1, 0);
 	
-	memcpy(data, "kl", sizeof("kl"));
-    esp_mqtt_client_publish(client, "home/kichen/light", data, sizeof(data), 1, 0);
-	memcpy(data, "kt", sizeof("kt"));
-    esp_mqtt_client_publish(client, "home/kichen/temp", data, sizeof(data), 1, 0);
-	memcpy(data, "ll", sizeof("ll"));
-    esp_mqtt_client_publish(client, "home/living/light", data, sizeof(data), 1, 0);
-	memcpy(data, "lt", sizeof("lt"));
-    esp_mqtt_client_publish(client, "home/living/temp", data, sizeof(data), 1, 0);
-	memcpy(data, "bl", sizeof("kl"));
-    esp_mqtt_client_publish(client, "home/bedroom/light", data, sizeof(data), 1, 0);
-	memcpy(data, "bt", sizeof("kl"));
-    esp_mqtt_client_publish(client, "home/bedroom/temp", data, sizeof(data), 1, 0);
+	// memcpy(data, "kl", sizeof("kl"));
+	//    esp_mqtt_client_publish(client, "home/kichen/light", data, sizeof(data), 1, 0);
+	// memcpy(data, "kt", sizeof("kt"));
+	//    esp_mqtt_client_publish(client, "home/kichen/temp", data, sizeof(data), 1, 0);
+	// memcpy(data, "ll", sizeof("ll"));
+	//    esp_mqtt_client_publish(client, "home/living/light", data, sizeof(data), 1, 0);
+	// memcpy(data, "lt", sizeof("lt"));
+	//    esp_mqtt_client_publish(client, "home/living/temp", data, sizeof(data), 1, 0);
+	// memcpy(data, "bl", sizeof("kl"));
+	//    esp_mqtt_client_publish(client, "home/bedroom/light", data, sizeof(data), 1, 0);
+	// memcpy(data, "bt", sizeof("kl"));
+	//    esp_mqtt_client_publish(client, "home/bedroom/temp", data, sizeof(data), 1, 0);
     vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
