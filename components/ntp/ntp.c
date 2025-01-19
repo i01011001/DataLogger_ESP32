@@ -1,22 +1,20 @@
-#include "esp_err.h"
 #include "esp_sntp.h"
 #include "esp_system.h"
-#include <esp_log.h>
-#include <stdio.h>
-#include <time.h>
+#include "esp_log.h"
+#include "time.h"
+#include "esp_log.h"
 
-#include <driver/i2c.h>
-#include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <i2c_rw.h>
 
 #define TAG "INDEX"
 
-char Current_Date_Time[100];
+static char Current_Date_Time[100];
 
-struct tm timeinfo;
+static struct tm timeinfo;
 
-void Get_current_date_time(char *date_time) {
+static void Get_current_date_time(char *date_time);
+static void initialize_sntp(void);
+
+static void Get_current_date_time(char *date_time) {
     // char strftime_buf[64];
     time_t now;
     time(&now);
@@ -38,7 +36,6 @@ static void initialize_sntp(void) {
     esp_sntp_init();
 }
 
-// void set_time(){
 void ntp_init(void) {
     int retry = 0;
     const int retry_count = 4;

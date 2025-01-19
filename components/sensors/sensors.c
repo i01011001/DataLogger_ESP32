@@ -1,19 +1,17 @@
-#include "freertos/idf_additions.h"
-#include <driver/i2c.h>
-#include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <i2c_rw.h>
-#include <server.h>
-
-#include <driver/gpio.h>
-#include <esp_timer.h>
-#include <freertos/semphr.h>
-#include <freertos/task.h>
-#include <math.h>
-#include <stdio.h>
 #include <string.h>
+#include <math.h>
 
-#include <ntp.h>
+#include "driver/i2c.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "driver/gpio.h"
+#include "esp_timer.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "ntp.h"
+
+#include "i2c_rw.h"
+#include "server.h"
 
 // -----------------------------[  ]--------------------------------- //
 

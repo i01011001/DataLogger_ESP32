@@ -1,32 +1,33 @@
-#include "esp_crt_bundle.h"
-#include <driver/gpio.h>
-#include <esp_event.h>
-#include <esp_http_client.h>
-#include <esp_https_ota.h>
-#include <esp_log.h>
-#include <esp_netif.h>
-#include <esp_ota_ops.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <stdio.h>
+#include "driver/gpio.h"
+#include "esp_event.h"
+#include "esp_http_client.h"
+#include "esp_https_ota.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_ota_ops.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define intr_button 0
-
-SemaphoreHandle_t sema_handler;
-
 #define TAG "OTA"
 
 #define BUFFER_SIZE 1024
 #define OTA_RECV_TIMEOUT 5000
 
-static char ota_write_data[BUFFER_SIZE + 1] = {0};
+SemaphoreHandle_t sema_handler;
 
-// for https certification
 extern const uint8_t cert_pem[] asm("_binary_google_pem_start");
 
-void intr_button_pushed() { xSemaphoreGive(sema_handler); }
+static char ota_write_data[BUFFER_SIZE + 1] = {0};
 
-void intr_setup() {
+static void intr_button_pushed();
+static void __attribute__((noreturn)) task_fatal_error(void);
+static void http_cleanup(esp_http_client_handle_t client);
+static void infinite_loop(void);
+static void ota_setup(void *pvParameter);
+void ota_start(void);
+
+static void intr_setup() {
 	gpio_config_t intr_button_config = {
 		.intr_type = GPIO_INTR_POSEDGE,
 		.mode = GPIO_MODE_INPUT,
@@ -39,11 +40,14 @@ void intr_setup() {
 	gpio_isr_handler_add(intr_button, intr_button_pushed, NULL);
 }
 
+static void intr_button_pushed() { 
+	xSemaphoreGive(sema_handler); 
+}
+
 static void __attribute__((noreturn)) task_fatal_error(void)
 {
 	ESP_LOGE(TAG, "Exiting task due to fatal error...");
 	(void)vTaskDelete(NULL);
-
 	while (1) {
 		;
 	}

@@ -1,4 +1,4 @@
-#include <driver/i2c.h>
+#include "driver/i2c.h"
 
 #define MASTER_FREQ 400000
 #define MASTER_TIMEOUT 1000

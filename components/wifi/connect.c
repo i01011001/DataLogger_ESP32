@@ -1,11 +1,11 @@
-#include <esp_event.h>
-#include <esp_log.h>
-#include <esp_netif.h>
-#include <esp_wifi.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/event_groups.h>
-#include <netdb.h>
-#include <nvs_flash.h>
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "netdb.h"
+#include "nvs_flash.h"
 
 #define STATIC_IP_ADDR &"192.168.1.57"[0]
 #define STATIC_NETMASK_ADDR &"255.255.255.0"[0]
@@ -18,22 +18,17 @@
 #define WIFI_MAXIMUM_RETRY 10
 
 static char *TAG = "WIFI_CONNECT";
+static int s_retry_num = 0;
 
-esp_netif_t *esp_netif;
-
+static esp_netif_t *esp_netif;
 static EventGroupHandle_t s_wifi_event_group;
-
-static void set_static_ip(esp_netif_t *netif);
-
-int s_retry_num = 0;
 
 static void event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 static esp_err_t set_dns_server(esp_netif_t *netif, uint32_t addr, esp_netif_dns_type_t type);
+static esp_err_t get_dns_server(esp_netif_t *netif);
 static void set_static_ip(esp_netif_t *netif);
 static void connect_init(void);
 static esp_err_t connect_sta();
-
-static esp_err_t get_dns_server(esp_netif_t *netif);
 
 esp_err_t wifi_init() {
     connect_init();
