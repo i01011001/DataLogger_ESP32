@@ -1,10 +1,10 @@
 #include <string.h>
 #include <math.h>
 
-#include "driver/i2c.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "driver/gpio.h"
+#include "driver/i2c.h"
 #include "esp_timer.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -120,8 +120,8 @@ void tinyRTC_init() { xTaskCreate(time_sync, "RTC", 4000, NULL, 2, NULL); }
 #define DHT_CHECKSUM_ERROR -1
 #define DHT_OK 0
 
-#define DHT 22
-#define DHT_NEG 23
+#define DHT GPIO_NUM_20
+#define DHT_NEG GPIO_NUM_21
 
 #define tag "DHT"
 
