@@ -52,33 +52,26 @@ static void send_data(void *arg) {
 	cJSON_AddStringToObject(json, "accel", get_accel());
 	cJSON_AddStringToObject(json, "gyro", get_gyro());
 	cJSON_AddNumberToObject(json, "lux", get_lux());
-	cJSON_AddNumberToObject(json, "day", get_lux());
-	// memcpy(response, cJSON_Print(json), sizeof(response));
-	char *response = cJSON_Print(json);
-	// snprintf(response, 200,
-	//          "\{\"time\":\"%02x | %02x | %02x\",
-	//          \"date\":\"%02x | %02x | " "%02x\",
-	//          \"day\":\"%02x\",
-	//          \"humidity\":\"%02.2f\",
-	//          \"temperature\":\"%" "02.2f\", 
-	//          \"accel\":\"%s\", 
-	//          \"gyro\":\"%s\", 
-	//          \"lux\":\"%03.2f\"}",
-	//          time_data[2], time_data[1], time_data[0], time_data[6], time_data[5], time_data[4], time_data[3], get_humidity(), get_temperature(), 
-	//          get_accel(),
-	//          get_gyro(), get_lux());
+	cJSON_AddNumberToObject(json, "second", time_data[0]);
+	cJSON_AddNumberToObject(json, "minute", time_data[1]);
+	cJSON_AddNumberToObject(json, "hour", time_data[2]);
+	cJSON_AddNumberToObject(json, "day", time_data[3]);
+	cJSON_AddNumberToObject(json, "date", time_data[4]);
+	cJSON_AddNumberToObject(json, "month", time_data[5]);
+	cJSON_AddNumberToObject(json, "year", time_data[6]);
 
-	// cJSON_free(json);
+	char *response = cJSON_Print(json);
+
 	cJSON_Delete(json);
 
 	httpd_ws_frame_t ws_pkt={};
-// memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-ws_pkt.payload = (uint8_t *)response;
-ws_pkt.len = strlen(response);
-ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+	// memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+	ws_pkt.payload = (uint8_t *)response;
+	ws_pkt.len = strlen(response);
+	ws_pkt.type = HTTPD_WS_TYPE_TEXT;
 
-httpd_ws_send_frame_async(hd, fd, &ws_pkt);
-free(resp_arg);
+	httpd_ws_send_frame_async(hd, fd, &ws_pkt);
+	free(resp_arg);
 }
 
 // Get all clients and send async message
