@@ -1,100 +1,69 @@
 #include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <mqtt.h>
-#include <mqtt_client.h>
-#include <stdio.h>
-// #include <dht.h>
+#include <esp_random.h>
 
-#include <sensors.h>
-#include <string.h>
 
-static const char *TAG_M = "MQTT_EVENT";
+// Whether the given script is using encryption or not,
+// generally recommended as it increases security (communication with the server is not in clear text anymore),
+// it does come with an overhead tough as having an encrypted session requires a lot of memory,
+// which might not be avaialable on lower end devices.
+#define ENCRYPTED false
 
-// Function prototypes
-static void mqtt_command(esp_mqtt_event_handle_t event);
 
-static void mqtt_event_handler(void *event_handler_arg,
-                               esp_event_base_t event_base, int32_t event_id,
-                               void *event_data) {
-  esp_mqtt_event_handle_t event = event_data;
-  esp_mqtt_client_handle_t client = event->client;
-  switch (event->event_id) {
-  case MQTT_EVENT_BEFORE_CONNECT:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_BEFORE_CONNECT");
-    break;
-  case MQTT_EVENT_CONNECTED:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_CONNECTED");
-    esp_mqtt_client_subscribe(client, "command", 2);
-    break;
-  case MQTT_EVENT_DISCONNECTED:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_DISCONNECTED");
-    break;
-  case MQTT_EVENT_SUBSCRIBED:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_SUBCRIBED");
-    break;
-  case MQTT_EVENT_UNSUBSCRIBED:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_UNSUBSCRIBED");
-    break;
-  case MQTT_EVENT_PUBLISHED:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_PUBLISHED");
-    break;
-  case MQTT_EVENT_DATA:
-    ESP_LOGI(TAG_M, "MQTT_EVENT_DATA");
-    printf("%.*s: ", event->topic_len, event->topic);
-    printf("%.*s\n", event->data_len, event->data);
-    mqtt_command(event);
+#include <Espressif_MQTT_Client.h>
+#include <ThingsBoard.h>
 
-    break;
-  case MQTT_EVENT_ERROR:
-    ESP_LOGE(TAG_M, "MQTT_EVENT_ERROR");
-    break;
-  default:
-    break;
-  }
+// See https://thingsboard.io/docs/getting-started-guides/helloworld/
+// to understand how to obtain an access token
+constexpr char TOKEN[] = "TBP1dJdl85iYowoejJIo";
+
+// Thingsboard we want to establish a connection too
+constexpr char THINGSBOARD_SERVER[] = "demo.thingsboard.io";
+
+// MQTT port used to communicate with the server, 1883 is the default unencrypted MQTT port,
+// whereas 8883 would be the default encrypted SSL MQTT port
+constexpr uint16_t THINGSBOARD_PORT = 1883U;
+
+// Maximum size packets will ever be sent or received by the underlying MQTT client,
+// if the size is to small messages might not be sent or received messages will be discarded
+constexpr uint16_t MAX_MESSAGE_SIZE = 128U;
+
+constexpr char TEMPERATURE_KEY[] = "temperature";
+
+
+// Initalize the Mqtt client instance
+Espressif_MQTT_Client mqttClient;
+// Initialize ThingsBoard instance with the maximum needed buffer size
+ThingsBoard tb(mqttClient, MAX_MESSAGE_SIZE);
+
+// Status for successfully connecting to the given WiFi
+bool wifi_connected = false;
+
+
+/// @brief Callback method that is called if we got an ip address from the connected WiFi meaning we successfully established a connection
+/// @param event_handler_arg User data registered to the event
+/// @param event_base Event base for the handler
+/// @param event_id The id for the received event
+/// @param event_data The data for the event, esp_event_handler_t
+void on_got_ip(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+    wifi_connected = true;
 }
 
-static void mqtt_command(esp_mqtt_event_handle_t event) {
-  char command[event->data_len + 1];
-  snprintf(command, sizeof(command), "%s", event->data);
+/// @brief Initalizes WiFi connection,
+// will endlessly delay until a connection has been successfully established
 
-  if (strcmp(command, "reset") == 0) {
-    printf("reseting now");
-    esp_restart();
-  }
-}
+extern "C" void mqtt_init() {
 
-static void mqtt_publish(void *args) {
-  char data[16]={};
-  esp_mqtt_client_handle_t client = ((esp_mqtt_client_handle_t)args);
-  while (true) {
-    snprintf(data, sizeof(data), "%.2f\t%.2f\n", get_humidity(), get_temperature());
-    esp_mqtt_client_publish(client, "esp", data, sizeof(data), 1, 0);
-	
-	// memcpy(data, "kl", sizeof("kl"));
-	//    esp_mqtt_client_publish(client, "home/kichen/light", data, sizeof(data), 1, 0);
-	// memcpy(data, "kt", sizeof("kt"));
-	//    esp_mqtt_client_publish(client, "home/kichen/temp", data, sizeof(data), 1, 0);
-	// memcpy(data, "ll", sizeof("ll"));
-	//    esp_mqtt_client_publish(client, "home/living/light", data, sizeof(data), 1, 0);
-	// memcpy(data, "lt", sizeof("lt"));
-	//    esp_mqtt_client_publish(client, "home/living/temp", data, sizeof(data), 1, 0);
-	// memcpy(data, "bl", sizeof("kl"));
-	//    esp_mqtt_client_publish(client, "home/bedroom/light", data, sizeof(data), 1, 0);
-	// memcpy(data, "bt", sizeof("kl"));
-	//    esp_mqtt_client_publish(client, "home/bedroom/temp", data, sizeof(data), 1, 0);
-    vTaskDelay(pdMS_TO_TICKS(2000));
-  }
-}
+    for (;;) {
 
-void mqtt_init() {
-  esp_mqtt_client_config_t mqtt_cfg = {
-      .broker.address.uri = "mqtt://mqtt.eclipseprojects.io",
-  };
-  esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-  esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler,
-                                 client);
-  esp_mqtt_client_start(client);
+        if (!tb.connected()) {
+            tb.connect(THINGSBOARD_SERVER, TOKEN, THINGSBOARD_PORT);
+        }
 
-  xTaskCreate(mqtt_publish, "publish",2048,(void*)client, 2, NULL);
+        tb.sendTelemetryData(TEMPERATURE_KEY, esp_random());
+        // tb.sendTelemetryData(HUMIDITY_KEY, esp_random());
+
+        tb.loop();
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 }

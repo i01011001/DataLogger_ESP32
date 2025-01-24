@@ -7,9 +7,9 @@
 #include "netdb.h"
 #include "nvs_flash.h"
 
-#define STATIC_IP_ADDR &"192.168.1.57"[0]
+#define STATIC_IP_ADDR &"192.168.0.57"[0]
 #define STATIC_NETMASK_ADDR &"255.255.255.0"[0]
-#define STATIC_GW_ADDR &"192.168.1.254"[0]
+#define STATIC_GW_ADDR &"192.168.0.1"[0]
 #define STATIC_DNS_ADDR &"1.1.1.1"[0]
 #define STATIC_DNS_ADDR_BACKUP &"8.8.8.8"[0]
 
