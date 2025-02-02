@@ -23,7 +23,7 @@ void app_main(void) {
     // tinyRTC_init();
 
 
-    mqtt_init();
+    // mqtt_init();
     // mdns_service(); 
 	// ota_start();
     server_init();
