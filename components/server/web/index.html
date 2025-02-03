@@ -1,135 +1,177 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>ESP IOT DASHBOARD</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-    html {
-    font-family: Arial, Helvetica, sans-serif;
-    display: inline-block;
-    text-align: center;
-    background-color: #000000;
-    }
-    h1 {
-    font-size: 1.8rem;
-    color: #999999;
-    }
-    .topnav {
-    overflow: hidden;
-    background-color: #000000;
-    border-bottom: 1px solid #494949;
-    }
-    body {
-    margin: 0;
-    }
-    .content {
-    padding: 50px;
-    }
-    .card-grid {
-    max-width: 1000px;
-    margin: 0 auto;
-    display: grid;
-    grid-gap: 2rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    }
-    .card {
-    background-color: #000000;
-    border: 1px solid #494949;
-    border-radius: 5px;
-    }
-    .card-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #999999
-    }
-    .reading {
-    font-size: 1.8rem;
-    color: #dddddd;
-    }
-    </style>
-  </head>
-  <body>
-    <div class="topnav">
-      <h1>SENSOR READINGS</h1>
-    </div>
-    <div class="content">
-      <div class="card-grid">
-        <div class="card">
-          <p class="card-title"> Date</p>
-          <p class="reading"><span id="date">__ | __ | __</span></p>
-        </div>
-        <!-- <div class="card"> -->
-        <!--   <p class="card-title"> Day</p> -->
-        <!--   <p class="reading"><span id="day">_</span></p> -->
-        <!-- </div> -->
-        <div class="card">
-          <p class="card-title"> Time</p>
-          <p class="reading"><span id="time">__ | __ | __</span></p>
-        </div>
-        <div class="card">
-          <p class="card-title"> Temperature</p>
-          <p class="reading"><span id="temperature">__.__</span></p>
-        </div>
-        <div class="card">
-          <p class="card-title"> Humidity</p>
-          <p class="reading"><span id="humidity">__.__</span></p>
-        </div>
-        <div class="card">
-          <p class="card-title"> Acceleration</p>
-          <p class="reading"><span id="accel">___ | ___ | ___</span></p>
-        </div>
-        <div class="card">
-          <p class="card-title"> Gyro</p>
-          <p class="reading"><span id="gyro">___ | ___ | ___</span></p>
-        </div>
-        <div class="card">
-          <p class="card-title"> Lux</p>
-          <p class="reading"><span id="lux">___.__</span></p>
-        </div>
-      </div>
-    </div>
-    <script>
+	<head>
+		<title>ESP IOT DASHBOARD</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<style>
+* {
+	color: #bbbbbb;
+}
+html {
+	font-family: Arial, Helvetica, sans-serif;
+	display: inline-block;
+	text-align: center;
+	background-color: #000000;
+}
+	h1 {
+		font-size: 1.8rem;
+		color: #999999;
+	}
+	.topnav {
+		overflow: hidden;
+		background-color: #000000;
+		border-bottom: 1px solid #494949;
+	}
+	body {
+		margin: 0;
+	}
+	.content {
+		padding: 50px;
+	}
+	.card-grid {
+		max-width: 1000px;
+		margin: 0 auto;
+		display: grid;
+		grid-gap: 2rem;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	}
+	.card {
+		background-color: #000000;
+		border: 1px solid #494949;
+		border-radius: 5px;
+	}
+	.card-title {
+		font-size: 1.2rem;
+		font-weight: bold;
+		color: #999999
+	}
+	.reading {
+		font-size: 1.8rem;
+		color: #dddddd;
+	}
+		</style>
+	</head>
+	<body>
+		<div class="topnav">
+			<h1>SENSOR READINGS</h1>
+		</div>
 
-    const socket = new WebSocket('ws://192.168.0.57/ws'); // Change to your WebSocket server address
+		<div class="content">
+			<div class="card-grid">
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Date</p> -->
+				<!--   <p class="reading"><span id="date">__ | __ | __</span></p> -->
+				<!-- </div> -->
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Day</p> -->
+				<!--   <p class="reading"><span id="day">_</span></p> -->
+				<!-- </div> -->
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Time</p> -->
+				<!--   <p class="reading"><span id="time">__ | __ | __</span></p> -->
+				<!-- </div> -->
+				<div class="card">
+					<p class="card-title"> Temperature</p>
+					<p class="reading"><span id="temperature">__.__</span></p>
+				</div>
+				<div class="card">
+					<p class="card-title"> Humidity</p>
+					<p class="reading"><span id="humidity">__.__</span></p>
+				</div>
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Acceleration</p> -->
+				<!--   <p class="reading"><span id="accel">___ | ___ | ___</span></p> -->
+				<!-- </div> -->
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Gyro</p> -->
+				<!--   <p class="reading"><span id="gyro">___ | ___ | ___</span></p> -->
+				<!-- </div> -->
+				<!-- <div class="card"> -->
+				<!--   <p class="card-title"> Lux</p> -->
+				<!--   <p class="reading"><span id="lux">___.__</span></p> -->
+				<!-- </div> -->
+			</div>
+		</div>
 
-    socket.onopen = () => {
-      console.log('WebSocket connection established.');
-    };
+		<script>
+			const socket = new WebSocket('ws://192.168.0.57/ws'); // Change to your WebSocket server address
 
-    socket.onmessage = (event) => {
-      console.log('Message received:', event.data); 
+			socket.onopen = () => {
+				console.log('WebSocket connection established.');
+			};
 
-      const recv = JSON.parse(event.data);
+			socket.onmessage = (event) => {
+				console.log('Message received:', event.data); 
 
-      const timeID = document.getElementById('time');
-      timeID.innerHTML = `<p>${recv.time}</p>`;
+				const recv = JSON.parse(event.data);
 
-      const dateID = document.getElementById('date');
-      dateID.innerHTML = `<p>${recv.date}</p>`;
+				//      const timeID = document.getElementById('time');
+				//      timeID.innerHTML = `<p>${recv.time}</p>`;
+				//
+				//      const dateID = document.getElementById('date');
+				//      dateID.innerHTML = `<p>${recv.date}</p>`;
 
-      // const dayID = document.getElementById('day');
-      // dayID.innerHTML = `<p>${recv.day}</p>`;
+				// const dayID = document.getElementById('day');
+				// dayID.innerHTML = `<p>${recv.day}</p>`;
 
-      const temperatureID = document.getElementById('temperature');
-      temperatureID.innerHTML = `<p>${recv.temperature}&deg;C</p>`;
+				const temperatureID = document.getElementById('temperature');
+				temperatureID.innerHTML = `<p>${recv.temperature}&deg;C</p>`;
 
-      const humidityID = document.getElementById('humidity');
-      humidityID.innerHTML = `<p>${recv.humidity}&percnt;</p>`;
+				const humidityID = document.getElementById('humidity');
+				humidityID.innerHTML = `<p>${recv.humidity}&percnt;</p>`;
 
-      const accelID = document.getElementById('accel');
-      accelID.innerHTML = `<p>${recv.accel}</p>`;
+				//      const accelID = document.getElementById('accel');
+				//      accelID.innerHTML = `<p>${recv.accel}</p>`;
+				//
+				//      const gyroID = document.getElementById('gyro');
+				//      gyroID.innerHTML = `<p>${recv.gyro}</p>`;
+				//
+				//      const luxID = document.getElementById('lux');
+				//      luxID.innerHTML = `<p>${recv.lux}</p>`;
+			};
 
-      const gyroID = document.getElementById('gyro');
-      gyroID.innerHTML = `<p>${recv.gyro}</p>`;
+			window.onbeforeunload = () => {
+				socket.close();
+			};
 
-      const luxID = document.getElementById('lux');
-      luxID.innerHTML = `<p>${recv.lux}</p>`;
-    };
+		</script>
 
-    window.onbeforeunload = () => {
-      socket.close();
-    };
-    </script>
-    <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-base.min.js"></script>
-  </body>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"> </script>
+		<canvas id="lineGraph"></canvas>
+		<script>
+			// Get the canvas element
+			const ctx = document.getElementById('lineGraph').getContext('2d');
+
+			// Create the line chart
+			const myLineChart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+					datasets: [{
+						label: 'Monthly Sales',
+						data: [65, 59, 80, 81, 56, 55],
+						borderColor: 'rgb(75, 192, 192)',
+						tension: 0.1,
+						fill: false
+					},
+						{
+							label: 'Monthly Expenses',
+							data: [28, 48, 40, 19, 86, 27],
+							borderColor: 'rgb(255, 99, 132)',
+							tension: 0.1,
+							fill: false
+						}]
+				},
+				options: {
+					responsive: true,
+					scales: {
+						y: {
+							beginAtZero: true
+						}
+					}
+				}
+			});
+		</script>
+
+	</body>
 </html>

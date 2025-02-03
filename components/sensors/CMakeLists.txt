@@ -1,5 +1,5 @@
-idf_component_register(SRCS "sensors.c"
-  INCLUDE_DIRS "."
+idf_component_register(SRCS  "./src/dht22.c"
+  INCLUDE_DIRS "." "./include"
   REQUIRES
   driver
   i2c_rw
@@ -7,6 +7,7 @@ idf_component_register(SRCS "sensors.c"
   client
   esp_timer
   ntp
+  dht
   )
 
 

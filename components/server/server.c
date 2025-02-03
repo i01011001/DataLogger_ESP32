@@ -6,7 +6,7 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "mdns.h"
-#include "sensors.h"
+#include "dht22.h"
 #include "server.h"
 #include "cJSON.h"
 
@@ -24,7 +24,7 @@ struct async_resp_arg {
 static esp_err_t uri_home(httpd_req_t *req);
 static esp_err_t ws_handler(httpd_req_t *req);
 static void send_data(void *arg) ;
-static void ws_server_send_messages(httpd_handle_t *server);
+static void ws_server_send_messages(void *serverd);
 
 // setup for the home page
 static esp_err_t uri_home(httpd_req_t *req) {
@@ -49,16 +49,16 @@ static void send_data(void *arg) {
 	cJSON *json = cJSON_CreateObject();
 	cJSON_AddNumberToObject(json, "humidity", get_humidity());
 	cJSON_AddNumberToObject(json, "temperature", get_temperature());
-	cJSON_AddStringToObject(json, "accel", get_accel());
-	cJSON_AddStringToObject(json, "gyro", get_gyro());
-	cJSON_AddNumberToObject(json, "lux", get_lux());
-	cJSON_AddNumberToObject(json, "second", time_data[0]);
-	cJSON_AddNumberToObject(json, "minute", time_data[1]);
-	cJSON_AddNumberToObject(json, "hour", time_data[2]);
-	cJSON_AddNumberToObject(json, "day", time_data[3]);
-	cJSON_AddNumberToObject(json, "date", time_data[4]);
-	cJSON_AddNumberToObject(json, "month", time_data[5]);
-	cJSON_AddNumberToObject(json, "year", time_data[6]);
+	// cJSON_AddStringToObject(json, "accel", get_accel());
+	// cJSON_AddStringToObject(json, "gyro", get_gyro());
+	// cJSON_AddNumberToObject(json, "lux", get_lux());
+	// cJSON_AddNumberToObject(json, "second", time_data[0]);
+	// cJSON_AddNumberToObject(json, "minute", time_data[1]);
+	// cJSON_AddNumberToObject(json, "hour", time_data[2]);
+	// cJSON_AddNumberToObject(json, "day", time_data[3]);
+	// cJSON_AddNumberToObject(json, "date", time_data[4]);
+	// cJSON_AddNumberToObject(json, "month", time_data[5]);
+	// cJSON_AddNumberToObject(json, "year", time_data[6]);
 
 	char *response = cJSON_Print(json);
 
@@ -74,26 +74,26 @@ static void send_data(void *arg) {
 	free(resp_arg);
 }
 
-// Get all clients and send async message
-static void ws_server_send_messages(httpd_handle_t *server) {
-	bool send_messages = true;
-	// Send async message to all connected clients that use websocket protocol
-	// every 10 seconds
-	while (send_messages) {
-		vTaskDelay(pdMS_TO_TICKS(5000));
-		if (!*server) { // httpd might not have been created by now
-			continue;
+static void ws_server_send_messages(void *serverd) {
+    httpd_handle_t server = (httpd_handle_t)serverd;
+    bool send_messages = true;
+    while (send_messages) {
+        vTaskDelay(pdMS_TO_TICKS(10000)); // Fixed delay
+        if (server == NULL) { // Check handle directly
+            ESP_LOGE(TAG, "Server handle is NULL!");
+			   continue;
 		}
 		int max_clients = 10;
+
 		size_t clients = max_clients;
 		int client_fds[max_clients];
-		if (httpd_get_client_list(*server, &clients, client_fds) == ESP_OK) {
+		if (httpd_get_client_list(server, &clients, client_fds) == ESP_OK) {
 			for (size_t i = 0; i < clients; ++i) {
 				int sock = client_fds[i];
-				if (httpd_ws_get_fd_info(*server, sock) == HTTPD_WS_CLIENT_WEBSOCKET) {
+				if (httpd_ws_get_fd_info(server, sock) == HTTPD_WS_CLIENT_WEBSOCKET) {
 					ESP_LOGI(TAG, "Active client (fd=%d) -> sending async message", sock);
 					struct async_resp_arg *resp_arg = malloc(sizeof(struct async_resp_arg));
-					resp_arg->hd = *server;
+					resp_arg->hd = server;
 					resp_arg->fd = sock;
 					if (httpd_queue_work(resp_arg->hd, send_data, resp_arg) != ESP_OK) {
 						ESP_LOGE(TAG, "httpd_queue_work failed!");
@@ -103,6 +103,7 @@ static void ws_server_send_messages(httpd_handle_t *server) {
 				}
 			}
 		} else {
+		vTaskDelay(pdMS_TO_TICKS(500));
 			ESP_LOGE(TAG, "httpd_get_client_list failed!");
 			return;
 		}
@@ -127,7 +128,7 @@ void server_init() {
 		.is_websocket = true,
 	};
 	httpd_register_uri_handler(httpd_handler, &ws_uri);
-	ws_server_send_messages(&httpd_handler);
+	xTaskCreate(ws_server_send_messages, "send ws", 6000, httpd_handler,4, NULL);
 }
 
 void mdns_service() {

@@ -1,13 +1,16 @@
 dependencies:
-  bblanchon/arduinojson:
-    component_hash: 463812931f99cb7a554d64311288f537b43daaca3eed2427557b907af393447c
-    dependencies: []
+  espressif/esp-lib-utils:
+    component_hash: 49b70408100644ccd1b50d326c1068fe1de364744dda30e627218a0c1e2439be
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.1'
     source:
-      registry_url: https://components.espressif.com
+      registry_url: https://components.espressif.com/
       type: service
-    version: 6.21.5
+    version: 0.1.2
   espressif/mdns:
-    component_hash: 9ff9c578fc3a5ea3c68e807233e47f2ce6b2492a92d7a9356ae5c29ab45f0fde
+    component_hash: 4e21149422be01c24d4b1d4dec64fa07d136d8c5d234e931f3ebf375cbde51a0
     dependencies:
     - name: idf
       require: private
@@ -15,10 +18,15 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 1.3.0
+    version: 1.5.2
+  idf:
+    source:
+      type: idf
+    version: 5.3.0
 direct_dependencies:
+- espressif/esp-lib-utils
 - espressif/mdns
 - idf
-manifest_hash: 20518885f17f9325ac6cf635b8925c0d81efabbb004f19adf6ef020ff9b3d2c7
+manifest_hash: d8b2cdbff081a8732e80a5445ec3f1597ab4074869eb659fa467f078a9e4334f
 target: esp32
 version: 2.0.0
