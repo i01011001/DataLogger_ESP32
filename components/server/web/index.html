@@ -93,84 +93,74 @@ html {
 			</div>
 		</div>
 
-		<script>
-			const socket = new WebSocket('ws://192.168.0.57/ws'); // Change to your WebSocket server address
-
-			socket.onopen = () => {
-				console.log('WebSocket connection established.');
-			};
-
-			socket.onmessage = (event) => {
-				console.log('Message received:', event.data); 
-
-				const recv = JSON.parse(event.data);
-
-				//      const timeID = document.getElementById('time');
-				//      timeID.innerHTML = `<p>${recv.time}</p>`;
-				//
-				//      const dateID = document.getElementById('date');
-				//      dateID.innerHTML = `<p>${recv.date}</p>`;
-
-				// const dayID = document.getElementById('day');
-				// dayID.innerHTML = `<p>${recv.day}</p>`;
-
-				const temperatureID = document.getElementById('temperature');
-				temperatureID.innerHTML = `<p>${recv.temperature}&deg;C</p>`;
-
-				const humidityID = document.getElementById('humidity');
-				humidityID.innerHTML = `<p>${recv.humidity}&percnt;</p>`;
-
-				//      const accelID = document.getElementById('accel');
-				//      accelID.innerHTML = `<p>${recv.accel}</p>`;
-				//
-				//      const gyroID = document.getElementById('gyro');
-				//      gyroID.innerHTML = `<p>${recv.gyro}</p>`;
-				//
-				//      const luxID = document.getElementById('lux');
-				//      luxID.innerHTML = `<p>${recv.lux}</p>`;
-			};
-
-			window.onbeforeunload = () => {
-				socket.close();
-			};
-
-		</script>
-
 		<script src="https://cdn.jsdelivr.net/npm/chart.js"> </script>
 		<canvas id="lineGraph"></canvas>
 		<script>
-			// Get the canvas element
-			const ctx = document.getElementById('lineGraph').getContext('2d');
+			const socket = new WebSocket('ws://192.168.0.57/ws'); // Change to your WebSocket server address
 
-			// Create the line chart
+			// Chart configuration
+			const ctx = document.getElementById('lineGraph').getContext('2d');
+			const maxDataPoints = 20; // Number of points to show on the graph
+
 			const myLineChart = new Chart(ctx, {
 				type: 'line',
 				data: {
-					labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+					labels: [], // Time labels will go here
 					datasets: [{
-						label: 'Monthly Sales',
-						data: [65, 59, 80, 81, 56, 55],
-						borderColor: 'rgb(75, 192, 192)',
-						tension: 0.1,
-						fill: false
+						label: 'Temperature (°C)',
+						data: [],
+						borderColor: 'rgb(255, 99, 132)',
+						tension: 0.1
 					},
 						{
-							label: 'Monthly Expenses',
-							data: [28, 48, 40, 19, 86, 27],
-							borderColor: 'rgb(255, 99, 132)',
-							tension: 0.1,
-							fill: false
+							label: 'Humidity (%)',
+							data: [],
+							borderColor: 'rgb(54, 162, 235)',
+							tension: 0.1
 						}]
 				},
 				options: {
 					responsive: true,
 					scales: {
 						y: {
-							beginAtZero: true
+							beginAtZero: false
 						}
 					}
 				}
 			});
+
+			socket.onopen = () => {
+				console.log('WebSocket connection established.');
+			};
+
+			socket.onmessage = (event) => {
+				console.log('Message received:', event.data);
+				const recv = JSON.parse(event.data);
+				const time = new Date().toLocaleTimeString();
+
+				// Update numeric displays
+				document.getElementById('temperature').innerHTML = `<p>${recv.temperature}&deg;C</p>`;
+				document.getElementById('humidity').innerHTML = `<p>${recv.humidity}&percnt;</p>`;
+
+				// Update chart
+				myLineChart.data.labels.push(time);
+				myLineChart.data.datasets[0].data.push(recv.temperature);
+				myLineChart.data.datasets[1].data.push(recv.humidity);
+
+				// Remove oldest data if we exceed maximum points
+				if (myLineChart.data.labels.length > maxDataPoints) {
+					myLineChart.data.labels.shift();
+					myLineChart.data.datasets.forEach(dataset => {
+						dataset.data.shift();
+					});
+				}
+
+				myLineChart.update();
+			};
+
+			window.onbeforeunload = () => {
+				socket.close();
+			};
 		</script>
 
 	</body>
