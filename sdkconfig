@@ -391,8 +391,8 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Wifi connect
 #
-CONFIG_WIFI_SSID="void_ap"
-CONFIG_WIFI_PASSWD="i01011001"
+CONFIG_WIFI_SSID="podamibe"
+CONFIG_WIFI_PASSWD="Chobhar570)))"
 # end of Wifi connect
 # end of Data Logger Configuration
 
